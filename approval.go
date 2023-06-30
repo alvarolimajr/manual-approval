@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v43/github"
+	"github.com/sethvargo/go-githubactions"
 )
 
 type approvalEnvironment struct {
 	client              *github.Client
+	actions             *githubactions.Action
 	repoFullName        string
 	repo                string
 	repoOwner           string
@@ -23,7 +25,7 @@ type approvalEnvironment struct {
 	minimumApprovals    int
 }
 
-func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string) (*approvalEnvironment, error) {
+func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner string, runID int, approvers []string, minimumApprovals int, issueTitle, issueBody string, actions *githubactions.Action) (*approvalEnvironment, error) {
 	repoOwnerAndName := strings.Split(repoFullName, "/")
 	if len(repoOwnerAndName) != 2 {
 		return nil, fmt.Errorf("repo owner and name in unexpected format: %s", repoFullName)
@@ -32,6 +34,7 @@ func newApprovalEnvironment(client *github.Client, repoFullName, repoOwner strin
 
 	return &approvalEnvironment{
 		client:           client,
+		actions:          actions,
 		repoFullName:     repoFullName,
 		repo:             repo,
 		repoOwner:        repoOwner,
@@ -90,6 +93,8 @@ Respond %s to continue workflow or %s to cancel.`,
 	a.approvalIssueNumber = a.approvalIssue.GetNumber()
 
 	fmt.Printf("Issue created: %s\n", a.approvalIssue.GetURL())
+	a.actions.SetOutput("issue_url", a.approvalIssue.GetURL())
+
 	return nil
 }
 
